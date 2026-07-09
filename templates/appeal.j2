@@ -1,0 +1,28 @@
+{{ court_name }}
+
+Истец: {{ plaintiff }}
+Ответчик: {{ defendant }}
+Дело № {{ case_number }}
+
+АПЕЛЛЯЦИОННАЯ ЖАЛОБА
+на решение суда первой инстанции
+
+По делу № {{ case_number }} судом первой инстанции было вынесено решение о взыскании с {{ defendant }} в пользу {{ plaintiff }} суммы в размере {{ claim_amount }} руб.
+
+Доводы жалобы: {{ appeal_arguments }}
+
+Правовое обоснование: ст. {{ legal_articles }}.
+
+На основании изложенного и руководствуясь ст. {{ legal_articles }}, прошу:
+
+1. Отменить решение суда первой инстанции по делу № {{ case_number }}.
+2. Принять по делу новый судебный акт.
+
+Приложения:
+{% for item in attachments %}
+{{ loop.index }}. {{ item }}
+{% endfor %}
+
+{{ date }}
+
+{{ plaintiff_representative }} _______________ / {{ plaintiff }} /
