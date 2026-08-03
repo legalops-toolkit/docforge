@@ -28,7 +28,7 @@ dependencies = [
     "natasha==1.6.0",
     "pydantic==2.6.4",
     "pydantic-settings==2.2.1",
-    "slowapi==0.1.9",
+    "slowapi==0.1.10",
 ]
 
 [project.optional-dependencies]
