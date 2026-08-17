@@ -32,6 +32,33 @@ def test_extract_endpoint():
     assert "case_number" in data
 
 
+def test_extract_result_feeds_generate_claim(sample_ruling_text):
+    """Сквозной сценарий продукта: разобрали решение — сгенерировали иск.
+
+    Раньше ответ /extract нельзя было передать в /generate/claim как есть:
+    сумма отдавалась только строкой в том виде, в каком стояла в тексте
+    («500 000»), а /generate/claim принимает claim_amount как float, то есть
+    клиенту приходилось нормализовывать её самому. Тест проверяет именно
+    стык двух эндпоинтов, а не разбор суммы отдельно.
+    """
+    extracted = client.post("/extract", json={"text": sample_ruling_text}).json()
+    assert extracted["claim_amount_value"] == 500000.0
+
+    generated = client.post(
+        "/generate/claim",
+        json={
+            "plaintiff": extracted["plaintiff"],
+            "defendant": extracted["defendant"],
+            "claim_amount": extracted["claim_amount_value"],
+            "case_number": extracted["case_number"],
+        },
+    )
+    assert generated.status_code == 200
+    assert generated.headers["content-type"] == (
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+
+
 def test_extract_endpoint_empty_text_returns_422():
     # min_length=1 на уровне Pydantic-схемы отклоняет пустую строку раньше,
     # чем запрос вообще доходит до EntityExtractor.

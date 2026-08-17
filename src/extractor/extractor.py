@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from functools import cached_property
 
 from natasha import Doc, NewsEmbedding, NewsMorphTagger, NewsNERTagger, Segmenter
@@ -12,6 +13,33 @@ from src.core.exceptions import ExtractionError
 from src.extractor.patterns import LEGAL_PATTERNS
 
 logger = logging.getLogger(__name__)
+
+
+def parse_amount(raw: str) -> float | None:
+    """Переводит найденную в тексте сумму в число.
+
+    В русских судебных актах разряды разделяются пробелом (в том числе
+    неразрывным), а копейки — запятой: «1 234 567,89». Поэтому пробелы
+    убираются целиком, а запятая приводится к точке.
+
+    Возвращает None, если строка не разбирается — вызывающий код должен
+    трактовать это как «суммы нет», а не как ноль: ноль в исковом заявлении
+    хуже пустого поля.
+    """
+    normalized = re.sub(r"\s", "", raw).replace(",", ".")
+    try:
+        value = float(normalized)
+    except ValueError:
+        logger.warning("Не удалось привести сумму %r к числу", raw)
+        return None
+
+    if value <= 0:
+        # /generate/* принимают claim_amount строго больше нуля, так что
+        # ноль или отрицательное значение туда всё равно не передать.
+        logger.warning("Сумма %r разобралась в неположительное число %s", raw, value)
+        return None
+
+    return value
 
 
 class ExtractionMeta(BaseModel):
@@ -25,6 +53,15 @@ class ExtractionResult(BaseModel):
     plaintiff: str = "Не найден"
     defendant: str = "Не найден"
     claim_amount: str = "Не указана"
+    # Та же сумма числом, пригодным для /generate/claim и /generate/appeal:
+    # они принимают claim_amount как float > 0, а claim_amount выше — строка
+    # ровно в том виде, в каком она стояла в тексте («500 000», «1 234 567,89»).
+    # Без этого поля результат /extract нельзя передать в /generate без
+    # ручной нормализации на стороне клиента, хотя весь сценарий продукта
+    # состоит именно в связке «разобрали решение → сгенерировали документ».
+    # None означает «сумма не найдена или не разобралась»; исходная строка при
+    # этом всё равно остаётся в claim_amount, чтобы ничего не терялось.
+    claim_amount_value: float | None = None
     judge: str = "Не найден"
     case_number: str = "Не найден"
     court: str = "Не найден"
@@ -89,10 +126,13 @@ class EntityExtractor:
 
         legal = self._apply_legal_rules(text)
 
+        raw_amount = legal.get("claim_amount")
+
         result = ExtractionResult(
             plaintiff=plaintiff or "Не найден",
             defendant=defendant or "Не найден",
-            claim_amount=legal.get("claim_amount", "Не указана"),
+            claim_amount=raw_amount or "Не указана",
+            claim_amount_value=parse_amount(raw_amount) if raw_amount else None,
             judge=legal.get("judge", "Не найден"),
             case_number=legal.get("case_number", "Не найден"),
             court=legal.get("court", "Не найден"),

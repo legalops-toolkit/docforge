@@ -1,7 +1,40 @@
 import pytest
 
 from src.core.exceptions import ExtractionError
-from src.extractor.extractor import ExtractionResult
+from src.extractor.extractor import ExtractionResult, parse_amount
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        # Разряды разделены пробелом — основной формат судебных актов.
+        ("500 000", 500000.0),
+        ("1 234 567,89", 1234567.89),
+        # Неразрывный пробел: копируется из документов чаще обычного.
+        ("500 000", 500000.0),
+        ("45 300.50", 45300.50),
+        ("500000", 500000.0),
+    ],
+)
+def test_parse_amount_valid(raw, expected):
+    assert parse_amount(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "",
+        "  ",
+        "не указана",
+        # Ноль и отрицательные значения /generate/* всё равно не примут
+        # (там claim_amount строго больше нуля), поэтому наружу отдаётся None,
+        # а не число: пустое поле в иске лучше нулевой суммы.
+        "0",
+        "0,00",
+    ],
+)
+def test_parse_amount_invalid_returns_none(raw):
+    assert parse_amount(raw) is None
 
 
 def test_extract_entities(extractor, sample_ruling_text):
@@ -10,6 +43,9 @@ def test_extract_entities(extractor, sample_ruling_text):
     assert result.case_number == "А40-12345/2024"
     assert result.court == "Арбитражный суд города Москвы"
     assert result.claim_amount != "Не указана"
+    # Строка остаётся как в тексте, рядом — то же число для /generate/*.
+    assert result.claim_amount == "500 000"
+    assert result.claim_amount_value == 500000.0
 
 
 def test_extract_entities_from_general_jurisdiction_ruling(extractor):
@@ -31,6 +67,7 @@ def test_extract_entities_from_general_jurisdiction_ruling(extractor):
     assert result.case_number == "2-1234/2024"
     assert result.judge == "Ёлкиной А.Б."
     assert result.claim_amount != "Не указана"
+    assert result.claim_amount_value == 150000.0
 
 
 def test_extract_empty_text(extractor):
