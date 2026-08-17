@@ -58,7 +58,27 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "S"]
 ignore = ["S101"]  # assert разрешён в tests/
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S106"]
+# S105 — как и S106: правило срабатывает на имя переменной, а не на утечку.
+# В тестах это строки вроде `secret_detail = "internal server error detail"`,
+# проверяющие, что текст внутреннего исключения наружу не уходит.
+"tests/*" = ["S101", "S105", "S106"]
+
+[tool.ruff.lint.flake8-bugbear]
+# B008 запрещает вызов функции в значении аргумента по умолчанию — обычно это
+# ловушка с изменяемым дефолтом. У FastAPI же `Depends(...)` в дефолте — не
+# ловушка, а единственный документированный способ объявить зависимость, и
+# результат вызова неизменяемый. Переписывать эндпоинты ради правила нельзя,
+# глушить B008 целиком не хочется — поэтому список исключений точечный.
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+    "fastapi.Security",
+]
 
 [tool.mypy]
 python_version = "3.11"

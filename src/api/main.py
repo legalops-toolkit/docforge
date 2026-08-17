@@ -77,7 +77,12 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Подавление ниже: обработчик из slowapi объявлен как принимающий конкретный
+# RateLimitExceeded, а starlette ждёт обработчик, принимающий любой Exception.
+# Сузить сигнатуру нельзя (код чужой), расширить — значит потерять типизацию;
+# несоответствие безопасное, потому что starlette зовёт обработчик только для
+# того класса исключения, под который он зарегистрирован.
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 

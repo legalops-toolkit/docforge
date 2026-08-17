@@ -8,9 +8,8 @@ on:
 
 jobs:
   test:
-    name: Tests (Python 3.11)
+    name: Checks (Python 3.11)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,6 +26,19 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
 
+      # Порядок — от дешёвого к дорогому: расхождение версий и ошибка стиля
+      # ловятся за секунды, тесты с NER-моделями стоят заметно дороже.
+      # Команды совпадают с целями Makefile (`make lint`, `make test`), чтобы
+      # локальный прогон и CI проверяли ровно одно и то же.
+      - name: Check dependency files are in sync
+        run: python scripts/check_deps_sync.py
+
+      - name: Lint (ruff)
+        run: ruff check src tests
+
+      - name: Type check (mypy)
+        run: mypy src
+
       - name: Run tests
         run: pytest -v
 
@@ -41,8 +53,9 @@ jobs:
   docker:
     name: Docker build
     runs-on: ubuntu-latest
+    # Без `if: always()`: собирать образ из кода, который не прошёл проверки,
+    # смысла нет — зелёная сборка на красных тестах только вводит в заблуждение.
     needs: test
-    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
