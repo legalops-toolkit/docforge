@@ -1,0 +1,94 @@
+/* ==========================================================================
+   ТОКЕНЫ
+   Метафора бренда: судебное дело физически прошивают ниткой через два
+   прокола и скрепляют узел бумажной наклейкой с печатью — только тогда
+   документ считается «подшитым» и легитимным. Отсюда — фирменная золотая
+   нить-разделитель между секциями и печать как акцентная форма.
+
+   Палитра — «дело при свете настольной лампы»: тёплый почти-чёрный кабинет,
+   тёплая слоновая кость и приглушённое старое золото вместо жёлтого неона.
+   Не чистый чёрный/белый — везде лёгкий тёплый подтон.
+   ========================================================================== */
+:root {
+  /* ---- Тёмная поверхность (шапка, hero, futer, editorial-блоки) ---- */
+  --bg-ink: #101214;
+  --bg-ink-raised: #1A1C1F;
+  --bg-ink-line: #2B2D2C;
+
+  --text-on-ink: #F4F1E9;
+  --text-on-ink-muted: #A9A79C;
+  --text-on-ink-faint: #74736A;
+
+  /* ---- Светлая поверхность (миссия, формы, безопасность) ---- */
+  --bg-paper: #F0EEE6;
+  --bg-paper-raised: #FFFFFF;
+  --bg-paper-sunken: #E5E2D6;
+  --border-paper: #D7D3C3;
+
+  --text-on-paper: #14151A;
+  --text-on-paper-muted: #55564D;
+  --text-on-paper-faint: #8B8A7C;
+
+  /* ---- Золото — единственный премиальный акцент ---- */
+  --gold: #B9924B;
+  --gold-bright: #D4AF6A;
+  --gold-deep: #7A5C28;      /* AA-safe для текста на светлом фоне */
+  --gold-soft: rgba(185, 146, 75, 0.14);
+  --gold-soft-strong: rgba(185, 146, 75, 0.28);
+
+  /* ---- Статусы ---- */
+  --success: #4C7A5E;
+  --success-on-ink: #7FC79E;
+  --success-soft: #DCE9E1;
+  --error: #B3453A;
+  --error-on-ink: #E08573;
+  --error-soft: #F3DCD8;
+  --warning: #8A5A17;
+  --warning-soft: #F1E3CE;
+
+  /* ---- Типографика ----
+     Display — Playfair Display: драматичный высококонтрастный серифный
+     акцент, читается «премиум редакция», хорошо держит кириллицу.
+     Текст/интерфейс — Manrope: округлый геометричный гротеск с тёплым,
+     дружелюбным характером — ближе аудитории 18–35, чем сухой технический
+     нейтральный гротеск.
+     Данные (номера дел, суммы) — IBM Plex Mono: печатная машинка юриста,
+     фирменная деталь продукта. */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* ---- Пространство ---- */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
+
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(16, 18, 20, 0.30), 0 12px 32px rgba(16, 18, 20, 0.28);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.45);
+  --shadow-gold: 0 8px 24px rgba(185, 146, 75, 0.25);
+
+  --container-max: 1320px;
+  --header-h: 84px;
+  --header-h-condensed: 62px;
+
+  /* ---- Движение ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 640ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

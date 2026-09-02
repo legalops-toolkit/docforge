@@ -1,25 +1,28 @@
 {{ court_name }}
 
 Истец: {{ plaintiff }}
+{% if plaintiff_representative %}
+в лице представителя: {{ plaintiff_representative }}
+{% endif %}
 Ответчик: {{ defendant }}
+
+Цена иска: {{ claim_amount }} руб.
 Дело № {{ case_number }}
 
 ИСКОВОЕ ЗАЯВЛЕНИЕ
-о взыскании задолженности
+о взыскании денежных средств
 
-{{ plaintiff }} (далее — Истец) обращается в {{ court_name }} с исковым заявлением к {{ defendant }} (далее — Ответчик) о взыскании задолженности в размере {{ claim_amount }} руб.
+{{ plaintiff }} обращается в суд с настоящим исковым заявлением к {{ defendant }} о взыскании денежных средств в размере {{ claim_amount }} рублей.
 
-Правовое обоснование: ст. {{ legal_articles }}.
+Ответчик не исполнил обязательства, в связи с чем истец вынужден обратиться за судебной защитой нарушенного права.
 
-На основании изложенного и руководствуясь ст. {{ legal_articles }}, прошу:
+На основании изложенного и руководствуясь {{ legal_articles }}, прошу суд:
 
-1. Взыскать с Ответчика в пользу Истца задолженность в размере {{ claim_amount }} руб.
+1. Взыскать с {{ defendant }} в пользу {{ plaintiff }} денежные средства в размере {{ claim_amount }} рублей.
 
-Приложения:
+Приложение:
 {% for item in attachments %}
 {{ loop.index }}. {{ item }}
 {% endfor %}
 
-{{ date }}
-
-{{ plaintiff_representative }} _______________ / {{ plaintiff }} /
+Истец: {{ plaintiff }}{% if plaintiff_representative %} (в лице {{ plaintiff_representative }}){% endif %}

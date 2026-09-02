@@ -154,15 +154,28 @@ docforge/
 │   └── core/          # config (ENV), exceptions, logging
 ├── templates/          # Jinja2-шаблоны документов
 ├── tests/               # pytest, >90% покрытия
+├── frontend/             # Статический веб-интерфейс (не зависит от src/,
+│                         # говорит с API по HTTP — см. frontend/README ниже)
 ├── data/                 # пример текста решения
+├── scripts/               # check_deps_sync.py и другие CI-скрипты
 ├── main.py               # тонкая точка входа в корне (реэкспорт app)
-├── Dockerfile             # multi-stage, non-root
+├── Dockerfile             # multi-stage, non-root (образ бэкенда, без frontend/)
 ├── render.yaml            # Render Blueprint
 ├── fly.toml               # Fly.io конфигурация
 ├── Procfile               # Railway / Heroku-style старт-команда
 ├── runtime.txt            # версия Python для Render
 └── .github/workflows/     # CI + Release
 ```
+
+### Frontend
+
+`frontend/` — самостоятельный статический сайт (без сборки, без Node):
+`frontend/index.html` + `frontend/css/*` + `frontend/js/*`. Обращается к
+API по адресу, заданному в `frontend/js/api.js` (`API_BASE`) — задеплойте
+его отдельно (Cloudflare Pages, Netlify, GitHub Pages) и укажите там домен
+бэкенда. `Dockerfile` бэкенда его не копирует и не отдаёт — это осознанно
+раздельные деплойменты.
+
 
 ## Конфигурация
 

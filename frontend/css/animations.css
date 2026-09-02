@@ -1,0 +1,63 @@
+/* ==========================================================================
+   SCROLL-REVEAL
+   Единая утилита: элемент с [data-reveal] стартует смещённым/прозрачным,
+   JS (scroll-animations.js) навешивает .is-in при пересечении вьюпорта.
+   Все анимации — только opacity/transform ради 60fps.
+   ========================================================================== */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal].is-in { opacity: 1; transform: translateY(0); }
+
+[data-reveal="scale"] { transform: translateY(0) scale(0.96); }
+[data-reveal="scale"].is-in { transform: translateY(0) scale(1); }
+
+[data-reveal="left"] { transform: translateX(-28px); }
+[data-reveal="left"].is-in { transform: translateX(0); }
+
+[data-reveal="right"] { transform: translateX(28px); }
+[data-reveal="right"].is-in { transform: translateX(0); }
+
+/* Групповой стаггер: JS проставляет --reveal-delay на детей .reveal-stagger */
+.reveal-stagger > * { transition-delay: var(--reveal-delay, 0ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; }
+}
+
+/* ---- Числа-факты editorial: лёгкий count-up доверия через прозрачность ---- */
+.editorial-fact { opacity: 0; transform: translateY(14px); transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); }
+.editorial-fact.is-in { opacity: 1; transform: translateY(0); }
+
+/* ---- Плавное появление карточек результата извлечения по одной ---- */
+.entity-row { opacity: 0; transform: translateX(-8px); animation: entity-in var(--dur-base) var(--ease-out) forwards; }
+.entity-row:nth-child(1) { animation-delay: 0ms; }
+.entity-row:nth-child(2) { animation-delay: 40ms; }
+.entity-row:nth-child(3) { animation-delay: 80ms; }
+.entity-row:nth-child(4) { animation-delay: 120ms; }
+.entity-row:nth-child(5) { animation-delay: 160ms; }
+.entity-row:nth-child(6) { animation-delay: 200ms; }
+@keyframes entity-in { to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .entity-row { animation: none; opacity: 1; transform: none; } }
+
+/* ---- Логотип-марка: лёгкое вращение при наведении ---- */
+.brand-mark { transition: transform var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out); }
+.brand:hover .brand-mark { transform: rotate(90deg); border-color: var(--gold-bright); }
+
+/* ---- Кнопки: золотой блик при наведении (transform-only) ---- */
+.btn-gold::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform var(--dur-slow) var(--ease-out);
+  pointer-events: none;
+}
+.btn-gold:hover::before { transform: translateX(120%); }
+
+/* ---- Изображение миссии: лёгкий параллакс-наклон при наведении ---- */
+.mission-visual { transition: transform var(--dur-base) var(--ease-out); }
+.mission-visual:hover { transform: translateY(-4px); }
+
+/* ---- Skip-эффект панелей форм при переключении табов уже покрыт state-fade ---- */

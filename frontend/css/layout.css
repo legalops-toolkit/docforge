@@ -1,0 +1,270 @@
+/* ==========================================================================
+   ШАПКА
+   ========================================================================== */
+.site-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: transparent;
+  transition: background-color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+}
+.site-header.is-condensed {
+  background: rgba(16, 18, 20, 0.86);
+  backdrop-filter: blur(10px) saturate(140%);
+  border-bottom: 1px solid var(--bg-ink-line);
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: var(--header-h);
+  transition: height var(--dur-base) var(--ease-out);
+}
+.site-header.is-condensed .header-inner { height: var(--header-h-condensed); }
+
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--font-display); font-weight: 600; font-size: 21px;
+  color: var(--text-on-ink); text-decoration: none;
+}
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  display: grid; place-items: center;
+  color: var(--gold); font-family: var(--font-display); font-size: 16px;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.site-header.is-condensed .brand-mark { transform: scale(0.84); }
+
+.header-nav { display: none; gap: 32px; }
+@media (min-width: 900px) { .header-nav { display: flex; } }
+.header-nav a {
+  position: relative;
+  color: var(--text-on-ink-muted); text-decoration: none; font-size: 14px; font-weight: 500;
+  letter-spacing: 0.01em; padding-bottom: 4px;
+}
+.header-nav a::after {
+  content: ""; position: absolute; left: 0; right: 100%; bottom: 0; height: 1px;
+  background: var(--gold); transition: right var(--dur-base) var(--ease-out);
+}
+.header-nav a:hover { color: var(--text-on-ink); }
+.header-nav a:hover::after { right: 0; }
+
+.header-actions { display: flex; align-items: center; gap: 12px; }
+
+/* ==========================================================================
+   БОКОВАЯ ШКАЛА СЕКЦИЙ (как «01/03» на референсе)
+   ========================================================================== */
+.section-rail {
+  position: fixed; left: var(--space-6); top: 50%; transform: translateY(-50%);
+  z-index: 90; display: none; flex-direction: column; align-items: center; gap: var(--space-3);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-on-ink-faint);
+  mix-blend-mode: difference;
+}
+@media (min-width: 1160px) { .section-rail { display: flex; } }
+.section-rail .rail-current { color: var(--gold-bright); font-weight: 500; font-size: 14px; }
+.section-rail .rail-track {
+  width: 1px; height: 96px; background: var(--bg-ink-line); position: relative; overflow: hidden;
+}
+.section-rail .rail-fill {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--gold); transform: scaleY(var(--rail-progress, 0)); transform-origin: top;
+}
+
+/* ==========================================================================
+   HERO
+   ========================================================================== */
+.hero {
+  position: relative; min-height: 100svh; display: flex; align-items: flex-end;
+  padding-top: var(--header-h); padding-bottom: var(--space-16);
+  overflow: hidden; background: var(--bg-ink);
+}
+.hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(180deg, rgba(16,18,20,0.55) 0%, rgba(16,18,20,0.72) 55%, rgba(16,18,20,0.96) 100%),
+    linear-gradient(90deg, rgba(16,18,20,0.55) 0%, rgba(16,18,20,0.15) 45%, rgba(16,18,20,0.55) 100%),
+    url('https://images.unsplash.com/photo-1742802382155-81bc4bc4fc4c?q=80&w=2400&auto=format&fit=crop');
+  background-size: cover; background-position: center 30%;
+  will-change: transform;
+}
+.hero-bg-grain {
+  position: absolute; inset: 0; z-index: 1; opacity: 0.05; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.hero-content { position: relative; z-index: 2; width: 100%; }
+.hero-grid { display: grid; gap: var(--space-10); }
+@media (min-width: 1020px) { .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: var(--space-16); align-items: end; } }
+
+.hero h1 {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(38px, 6vw, 68px); line-height: 1.06; letter-spacing: -0.015em;
+  margin-bottom: var(--space-5); color: var(--text-on-ink);
+}
+.hero h1 em { color: var(--gold-bright); font-style: italic; }
+.hero-lede { font-size: 18px; line-height: 1.7; color: var(--text-on-ink-muted); max-width: 54ch; margin-bottom: var(--space-8); }
+.hero-cta { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+
+.hero-reveal { opacity: 0; transform: translateY(22px); }
+.hero.is-loaded .hero-reveal {
+  opacity: 1; transform: translateY(0);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+}
+.hero.is-loaded .hero-reveal:nth-child(1) { transition-delay: 60ms; }
+.hero.is-loaded .hero-reveal:nth-child(2) { transition-delay: 160ms; }
+.hero.is-loaded .hero-reveal:nth-child(3) { transition-delay: 260ms; }
+.hero.is-loaded .hero-reveal:nth-child(4) { transition-delay: 360ms; }
+
+.hero-preview {
+  background: rgba(26, 28, 31, 0.72);
+  border: 1px solid rgba(244, 241, 233, 0.14);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.hero-preview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-4); border-bottom: 1px dashed rgba(244, 241, 233, 0.16);
+}
+.hero-preview-head span { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-on-ink-faint); }
+.demo-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em;
+  color: var(--gold-bright); border: 1px solid var(--gold);
+  border-radius: var(--radius-pill); padding: 3px 10px; text-transform: uppercase;
+}
+.hero-preview-body { padding: var(--space-4); }
+.hero-preview-source {
+  font-size: 13px; color: var(--text-on-ink-muted); line-height: 1.65;
+  border-left: 2px solid var(--gold); padding-left: var(--space-3); margin-bottom: var(--space-4);
+}
+.hero-preview-fields { display: grid; gap: var(--space-2); }
+.hero-field {
+  display: flex; justify-content: space-between; gap: var(--space-3);
+  font-size: 13.5px; padding: var(--space-1) 0;
+}
+.hero-field dt { color: var(--text-on-ink-faint); }
+.hero-field dd { margin: 0; font-family: var(--font-mono); font-weight: 500; text-align: right; color: var(--text-on-ink); }
+
+.scroll-cue {
+  position: absolute; left: 50%; bottom: var(--space-6); transform: translateX(-50%); z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  color: var(--text-on-ink-faint); font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none;
+}
+.scroll-cue-line { width: 1px; height: 28px; background: var(--text-on-ink-faint); position: relative; overflow: hidden; }
+.scroll-cue-line::after {
+  content: ""; position: absolute; top: -100%; left: 0; width: 100%; height: 100%; background: var(--gold);
+  animation: scroll-cue-run 1.8s var(--ease-in-out) infinite;
+}
+@keyframes scroll-cue-run { 0% { top: -100%; } 60% { top: 100%; } 100% { top: 100%; } }
+@media (prefers-reduced-motion: reduce) { .scroll-cue-line::after { animation: none; top: 0; } }
+
+/* ==========================================================================
+   МИССИЯ — светлая секция с золотым блоком и статуей
+   ========================================================================== */
+.mission-grid { display: grid; gap: var(--space-12); align-items: center; }
+@media (min-width: 980px) { .mission-grid { grid-template-columns: 1fr 0.9fr; gap: var(--space-16); } }
+
+.mission-copy p { margin-bottom: var(--space-4); color: var(--text-on-paper-muted); font-size: 16px; line-height: 1.75; }
+.mission-copy p:last-of-type { margin-bottom: var(--space-6); }
+.mission-copy h2 {
+  font-family: var(--font-display); font-size: clamp(26px, 3.4vw, 38px);
+  margin-bottom: var(--space-5); line-height: 1.16;
+}
+
+.mission-visual {
+  position: relative; max-width: 460px; margin-inline: auto;
+}
+.mission-visual::before {
+  /* Бронебойный способ задать пропорции 4:5 — работает всегда, в отличие
+     от aspect-ratio, который на части устройств схлопывает блок в нуль. */
+  content: ""; display: block; padding-top: 125%;
+}
+.mission-visual-gold {
+  position: absolute; top: 8%; right: 0; width: 78%; height: 84%;
+  background: linear-gradient(160deg, var(--gold) 0%, var(--gold-deep) 100%);
+  border-radius: var(--radius-lg);
+}
+.mission-visual-img {
+  position: absolute; inset: 0; width: 100%; height: 110%; top: -5%;
+  object-fit: cover; object-position: top center;
+  filter: grayscale(0.55) contrast(1.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.mission-visual-tag {
+  position: absolute; left: -18px; bottom: 24px; z-index: 2;
+  background: var(--bg-paper-raised); border-radius: var(--radius-md);
+  padding: var(--space-4); box-shadow: var(--shadow-card);
+  max-width: 220px;
+}
+.mission-visual-tag strong {
+  display: block; font-family: var(--font-display); font-size: 26px; color: var(--gold-deep); line-height: 1;
+  margin-bottom: 4px;
+}
+.mission-visual-tag span { font-size: 12.5px; color: var(--text-on-paper-muted); line-height: 1.4; }
+
+.mission-visual-peek {
+  position: absolute; top: -22px; right: -22px; z-index: 1;
+  width: 42%; min-width: 110px; min-height: 110px; border-radius: var(--radius-md);
+  overflow: hidden; box-shadow: var(--shadow-card);
+  border: 5px solid var(--bg-paper-raised);
+  transform: rotate(6deg);
+}
+.mission-visual-peek::before { content: ""; display: block; padding-top: 100%; }
+.mission-visual-peek img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.4);
+}
+
+/* ==========================================================================
+   EDITORIAL — тёмная цитата поверх колонн
+   ========================================================================== */
+.editorial {
+  position: relative; overflow: hidden;
+  background-image:
+    linear-gradient(180deg, rgba(16,18,20,0.90) 0%, rgba(16,18,20,0.94) 100%),
+    url('https://images.unsplash.com/photo-1750653345581-77d5f260b049?q=80&w=2000&auto=format&fit=crop');
+  background-size: cover; background-position: center 40%;
+}
+.editorial-inner { max-width: 900px; }
+.editorial blockquote {
+  margin: 0 0 var(--space-8);
+  font-family: var(--font-display); font-style: italic; font-weight: 500;
+  font-size: clamp(24px, 3.4vw, 36px); line-height: 1.4; color: var(--text-on-ink);
+}
+.editorial blockquote::before { content: "\201C"; color: var(--gold); }
+.editorial cite {
+  display: block; font-style: normal; font-family: var(--font-mono); font-size: 13px;
+  color: var(--text-on-ink-faint); letter-spacing: 0.02em;
+}
+.editorial-facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-6); margin-top: var(--space-12); padding-top: var(--space-8);
+  border-top: 1px solid var(--bg-ink-line);
+}
+.editorial-fact strong {
+  display: block; font-family: var(--font-display); font-size: 34px; color: var(--gold-bright);
+  margin-bottom: var(--space-1);
+}
+.editorial-fact span { font-size: 13.5px; color: var(--text-on-ink-muted); line-height: 1.5; }
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+.site-footer { padding: var(--space-12) 0 var(--space-10); border-top: 1px solid var(--bg-ink-line); }
+.footer-top {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-8);
+  padding-bottom: var(--space-8); margin-bottom: var(--space-6); border-bottom: 1px solid var(--bg-ink-line);
+}
+.footer-brand { max-width: 320px; }
+.footer-brand p { font-size: 14px; color: var(--text-on-ink-muted); margin-top: var(--space-3); line-height: 1.6; }
+.footer-cols { display: flex; gap: var(--space-12); flex-wrap: wrap; }
+.footer-col h3 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-on-ink-faint);
+  margin-bottom: var(--space-3); font-weight: 600;
+}
+.footer-col a {
+  display: block; font-size: 14px; color: var(--text-on-ink-muted); text-decoration: none;
+  margin-bottom: var(--space-2); transition: color var(--dur-fast);
+}
+.footer-col a:hover { color: var(--gold-bright); }
+.footer-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: space-between; }
+.footer-note { font-size: 12.5px; color: var(--text-on-ink-faint); }

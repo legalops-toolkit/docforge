@@ -108,3 +108,20 @@
 - Regex номера дела не покрывал часть форматов судов — расширен.
 - Генерация `.docx` через общий путь `/tmp/document.docx` могла привести к
   гонке данных при параллельных запросах — заменена на генерацию в памяти.
+
+## [1.1.0] — 2026-08-31
+
+### Added
+- Веб-интерфейс (`frontend/`): извлечение сущностей и генерация трёх типов
+  документов через браузер, без прямых вызовов API через curl.
+- Полный набор реализации бэкенда: `src/api/main.py` (маршруты, схемы
+  запросов, middleware лимита тела запроса, обработчики исключений),
+  `src/engine/generator.py` (Jinja2 → python-docx), `src/extractor/extractor.py`
+  (NER Natasha + regex, резолюция сторон), `src/extractor/patterns.py`
+  (regex-правила для суда/судьи/номера дела/суммы).
+- `templates/*.j2` — исковое заявление, апелляционная жалоба, договор
+  оказания услуг.
+- `scripts/check_deps_sync.py` реализован: сверяет версии пакетов между
+  `pyproject.toml` и `requirements*.txt`, используется в CI.
+- `.env.example`, `.python-version`, `.github/workflows/ci.yml`,
+  `.github/workflows/release.yml`.

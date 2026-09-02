@@ -1,94 +1,95 @@
-"""Генератор документов через Jinja2 + python-docx."""
+"""Генератор .docx: Jinja2 (текст, StrictUndefined) -> python-docx (файл).
 
-from __future__ import annotations
+Шаблон — обычный текст с Jinja2-разметкой, каждая непустая строка после
+рендера становится отдельным параграфом. StrictUndefined намеренно не даёт
+шаблону тихо подставить пустую строку вместо непереданной переменной —
+пропущенное поле в юридическом документе хуже явной ошибки на этапе
+генерации (см. README/SECURITY.md).
+"""
 
 import io
 import logging
-from datetime import date
 from pathlib import Path
 from typing import Any
 
 from docx import Document
-from jinja2 import StrictUndefined, Template, UndefinedError
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound, UndefinedError
 
-from src.core.config import TEMPLATES_DIR
+from src.core.config import settings
 from src.core.exceptions import GenerationError, TemplateNotFoundError, TemplateRenderError
 
 logger = logging.getLogger(__name__)
 
 
 class DocumentGenerator:
-    """Абстрактный генератор документов."""
+    """Рендерит .j2-шаблон из templates_dir в готовый .docx (bytes)."""
 
-    def __init__(self, templates_dir: str | Path | None = None) -> None:
-        self.templates_dir = Path(templates_dir) if templates_dir else TEMPLATES_DIR
+    def __init__(self, templates_dir: Path | None = None) -> None:
+        self.templates_dir = Path(templates_dir) if templates_dir is not None else settings.templates_dir
+        self._env = Environment(
+            loader=FileSystemLoader(str(self.templates_dir)),
+            undefined=StrictUndefined,
+            trim_blocks=True,
+            lstrip_blocks=True,
+            autoescape=False,  # выход — plain text/docx, а не HTML
+        )
 
-    def _render_template(self, template_name: str, data: dict[str, Any]) -> str:
-        """Рендерит Jinja2 шаблон. StrictUndefined гарантирует явную ошибку,
-        если в данных не хватает переменной, которую ждёт шаблон, вместо
-        молчаливой подстановки пустой строки."""
-        # Защита от path traversal: сейчас template_name всегда приходит из
-        # захардкоженного набора в api/main.py, но метод публичный, поэтому
-        # защищаемся и на этом уровне, а не только по соглашению вызывающей стороны.
-        safe_name = Path(template_name).name
-        if safe_name != template_name or ".." in template_name:
-            logger.warning("Отклонено подозрительное имя шаблона: %r", template_name)
-            raise TemplateNotFoundError(f"Недопустимое имя шаблона: {template_name!r}")
-
-        template_path = (self.templates_dir / safe_name).resolve()
-        if self.templates_dir.resolve() not in template_path.parents and template_path != self.templates_dir.resolve():
-            logger.warning("Путь шаблона вышел за пределы templates_dir: %s", template_path)
-            raise TemplateNotFoundError(f"Недопустимое имя шаблона: {template_name!r}")
-
+    def generate(self, template_name: str, data: dict[str, Any]) -> bytes:
+        safe_name = self._safe_template_name(template_name)
+        rendered_text = self._render_template(safe_name, data)
+        # Перехват — здесь, а не внутри _render_to_docx: этот метод может быть
+        # переопределён/замокан (см. tests/test_generator.py), и вызывающая
+        # сторона обязана гарантировать безопасное сообщение в любом случае.
         try:
-            content = template_path.read_text(encoding="utf-8")
-        except FileNotFoundError as exc:
-            # Полный путь на файловой системе сервера — только в лог. Раньше
-            # он попадал прямо в исключение, а DocForgeError-обработчик в
-            # api/main.py возвращает str(exc) клиенту без гейта по
-            # environment — то есть путь утекал бы и в "production".
-            logger.warning("Шаблон не найден: %s", template_path)
-            raise TemplateNotFoundError(f"Шаблон {template_name!r} не найден") from exc
+            return self._render_to_docx(rendered_text)
+        except Exception as exc:  # noqa: BLE001 — намеренно широкий улов на границе генерации
+            logger.exception("Не удалось сформировать .docx")
+            raise GenerationError("Не удалось сформировать документ. Повторите попытку позже.") from exc
 
-        template = Template(content, undefined=StrictUndefined)
+    def _safe_template_name(self, template_name: str) -> str:
+        """Нормализует имя шаблона и блокирует path traversal.
+
+        `Path(...).name` отбрасывает любые директории (`../`, абсолютные
+        пути, вложенные `sub/../../`) и оставляет только финальный компонент
+        имени файла — итоговый путь физически не может выйти за пределы
+        templates_dir, даже если вызывающий код когда-нибудь передаст сюда
+        template_name не из захардкоженного TEMPLATE_MAP.
+
+        Сообщение об ошибке использует исходный (не резолвленный) путь и имя
+        шаблона — то, что и так прислал вызывающий код, — но никогда не
+        абсолютный путь на диске сервера.
+        """
+        candidate_name = Path(template_name).name
+        candidate_path = self.templates_dir / candidate_name if candidate_name else None
+
+        if not candidate_name or candidate_path is None or not candidate_path.is_file():
+            raise TemplateNotFoundError(f"Шаблон «{template_name}» не найден.")
+        return candidate_name
+
+    def _render_template(self, safe_name: str, data: dict[str, Any]) -> str:
+        try:
+            template = self._env.get_template(safe_name)
+        except TemplateNotFound as exc:
+            raise TemplateNotFoundError(f"Шаблон «{safe_name}» не найден.") from exc
+
         try:
             return template.render(**data)
         except UndefinedError as exc:
-            logger.warning("В шаблоне %s не хватает переменной: %s", template_name, exc)
+            logger.warning("Рендер шаблона %s: отсутствует переменная (%s)", safe_name, exc)
             raise TemplateRenderError(
-                f"Шаблону {template_name} не хватает переменной: {exc}"
+                f"Шаблон «{safe_name}» ожидает переменную, которая не была передана."
             ) from exc
 
     def _render_to_docx(self, rendered_text: str) -> bytes:
-        """Конвертирует отрендеренный текст в .docx (в памяти, без временных файлов)."""
-        doc = Document()
-        for paragraph in rendered_text.split("\n"):
-            if paragraph.strip():
-                doc.add_paragraph(paragraph.strip())
+        """Построчно переносит отрендеренный текст в docx-параграфы."""
+        document = Document()
+        for line in rendered_text.split("\n"):
+            document.add_paragraph(line)
         buffer = io.BytesIO()
-        doc.save(buffer)
+        document.save(buffer)
         return buffer.getvalue()
 
-    def generate(self, template_name: str, data: dict[str, Any]) -> bytes:
-        """Генерирует документ по шаблону и данным."""
-        logger.info("Генерация документа по шаблону %s", template_name)
-        try:
-            data = dict(data)
-            data.setdefault("date", date.today().strftime("%d.%m.%Y"))
-            rendered = self._render_template(template_name, data)
-            result = self._render_to_docx(rendered)
-            logger.info("Документ %s сгенерирован, %d байт", template_name, len(result))
-            return result
-        except (TemplateNotFoundError, TemplateRenderError):
-            raise
-        except Exception as exc:
-            # str(exc) раньше уходил клиенту как есть (через DocForgeError-
-            # обработчик в api/main.py, который не проверяет environment) —
-            # текст внутреннего исключения python-docx/jinja2 мог содержать
-            # детали окружения. Полная информация остаётся в логе через
-            # logger.exception, наружу — только безопасное сообщение.
-            logger.exception("Неожиданная ошибка генерации документа %s", template_name)
-            raise GenerationError(f"Не удалось сгенерировать документ по шаблону {template_name}") from exc
 
-
+# Синглтон по умолчанию — переиспользуется через DI (src/api/dependencies.py),
+# чтобы Environment/FileSystemLoader не пересоздавались на каждый запрос.
 generator = DocumentGenerator()

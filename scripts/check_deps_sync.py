@@ -1,104 +1,121 @@
 #!/usr/bin/env python3
-"""Проверяет, что pyproject.toml и requirements*.txt описывают один и тот же
-набор пакетов с одинаковыми версиями — как для основных, так и для dev-
-зависимостей.
+"""Проверяет, что зависимости в pyproject.toml и requirements*.txt совпадают.
 
-Зачем: requirements.txt используется для рантайм-образа (см. комментарий в
-Dockerfile — пакет намеренно не ставится через `pip install .`, чтобы не
-тащить build-инструменты в финальный слой), а requirements-dev.txt дублирует
-[project.optional-dependencies].dev по той же причине для CI/локальной
-разработки. Версии продублированы в файлах руками — ничего не мешало
-обновить пакет в одном месте и забыть про другое, и они разъехались бы без
-единого предупреждения. Раньше проверялась только пара
-pyproject.toml/requirements.txt — dev-зависимости оставались открытой дырой
-того же класса.
+pyproject.toml — источник правды для разработки (pip install -e .[dev]),
+requirements.txt/requirements-dev.txt — то, что реально ставится в
+рантайм-образ (Dockerfile, Render, Railway). Ничто не мешает поправить
+версию в одном месте и забыть про другое — этот скрипт делает такое
+расхождение ошибкой CI, а не сюрпризом в проде.
 
-Использование: python3 scripts/check_deps_sync.py
-Код возврата: 0 — всё совпадает, 1 — есть расхождение (печатает diff).
+Использование: python scripts/check_deps_sync.py
+Код возврата: 0 — синхронно, 1 — есть расхождения (список — в stdout).
 """
+
+from __future__ import annotations
 
 import re
 import sys
 import tomllib
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+_REQUIREMENT_LINE = re.compile(r"^([A-Za-z0-9_.\-]+(?:\[[A-Za-z0-9_,\-]+\])?)==([A-Za-z0-9_.\-]+)$")
 
 
-def _parse_requirement_lines(lines: list[str]) -> dict[str, str]:
-    """Общий парсер для списков зависимостей вида 'pkg[extra]==1.2.3'."""
-    deps: dict[str, str] = {}
-    for line in lines:
-        name, _, version = line.partition("==")
-        # normalize extras away, e.g. "uvicorn[standard]" -> "uvicorn"
-        name = re.sub(r"\[.*\]", "", name).strip()
-        deps[name] = version.strip()
-    return deps
+def parse_requirements_file(path: Path) -> dict[str, str]:
+    """Разбирает requirements*.txt в {имя_пакета: версия}.
 
-
-def parse_pyproject_dependencies() -> dict[str, str]:
-    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    return _parse_requirement_lines(data["project"]["dependencies"])
-
-
-def parse_pyproject_dev_dependencies() -> dict[str, str]:
-    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    return _parse_requirement_lines(data["project"]["optional-dependencies"]["dev"])
-
-
-def _parse_requirements_file(filename: str) -> dict[str, str]:
-    raw_lines = []
-    for raw_line in (ROOT / filename).read_text(encoding="utf-8").splitlines():
+    Пропускает пустые строки, комментарии и `-r other.txt`-инклюды (они
+    сверяются отдельно на уровне того файла, куда указывают).
+    Имя пакета нормализуется без extras (`uvicorn[standard]` -> `uvicorn`),
+    чтобы сравнение с pyproject.toml было по существу, а не по записи.
+    """
+    result: dict[str, str] = {}
+    if not path.exists():
+        return result
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
-        # Пропускаем пустые строки, комментарии и `-r other.txt` — это не
-        # пакет, а ссылка на другой requirements-файл (requirements-dev.txt
-        # начинается с "-r requirements.txt").
         if not line or line.startswith("#") or line.startswith("-r "):
             continue
-        raw_lines.append(line)
-    return _parse_requirement_lines(raw_lines)
+        match = _REQUIREMENT_LINE.match(line)
+        if not match:
+            print(f"⚠️  Не удалось разобрать строку в {path.name}: {raw_line!r}")
+            continue
+        name, version = match.groups()
+        package_name = re.sub(r"\[.*\]$", "", name)
+        result[package_name.lower()] = version
+    return result
 
 
-def parse_requirements_txt() -> dict[str, str]:
-    return _parse_requirements_file("requirements.txt")
+def parse_pyproject_dependencies(pyproject: dict, key_path: tuple[str, ...]) -> dict[str, str]:
+    node = pyproject
+    for key in key_path:
+        node = node.get(key, {})
+    entries = node if isinstance(node, list) else []
+    result: dict[str, str] = {}
+    for entry in entries:
+        match = _REQUIREMENT_LINE.match(entry.strip())
+        if not match:
+            print(f"⚠️  Не удалось разобрать зависимость в pyproject.toml: {entry!r}")
+            continue
+        name, version = match.groups()
+        package_name = re.sub(r"\[.*\]$", "", name)
+        result[package_name.lower()] = version
+    return result
 
 
-def parse_requirements_dev_txt() -> dict[str, str]:
-    return _parse_requirements_file("requirements-dev.txt")
-
-
-def _report_mismatch(label: str, left_name: str, left: dict[str, str], right_name: str, right: dict[str, str]) -> bool:
-    """Печатает построчный diff, если left != right. Возвращает True, если всё совпало."""
-    if left == right:
-        print(f"OK: {label} синхронизированы.")
-        return True
-
-    print(f"MISMATCH between {label}:")
-    all_names = sorted(set(left) | set(right))
-    for name in all_names:
-        lv = left.get(name, "<отсутствует>")
-        rv = right.get(name, "<отсутствует>")
-        if lv != rv:
-            print(f"  {name}: {left_name}={lv}  {right_name}={rv}")
-    return False
+def diff(label_a: str, deps_a: dict[str, str], label_b: str, deps_b: dict[str, str]) -> list[str]:
+    problems: list[str] = []
+    all_packages = sorted(set(deps_a) | set(deps_b))
+    for package in all_packages:
+        version_a = deps_a.get(package)
+        version_b = deps_b.get(package)
+        if version_a is None:
+            problems.append(f"  - {package}: есть в {label_b} ({version_b}), нет в {label_a}")
+        elif version_b is None:
+            problems.append(f"  - {package}: есть в {label_a} ({version_a}), нет в {label_b}")
+        elif version_a != version_b:
+            problems.append(f"  - {package}: {label_a}={version_a}, {label_b}={version_b}")
+    return problems
 
 
 def main() -> int:
-    main_ok = _report_mismatch(
-        "pyproject.toml [project.dependencies] и requirements.txt",
-        "pyproject.toml",
-        parse_pyproject_dependencies(),
-        "requirements.txt",
-        parse_requirements_txt(),
+    pyproject_path = ROOT_DIR / "pyproject.toml"
+    with pyproject_path.open("rb") as f:
+        pyproject = tomllib.load(f)
+
+    pyproject_main = parse_pyproject_dependencies(pyproject, ("project", "dependencies"))
+    pyproject_dev = parse_pyproject_dependencies(pyproject, ("project", "optional-dependencies", "dev"))
+
+    requirements_main = parse_requirements_file(ROOT_DIR / "requirements.txt")
+    requirements_dev = parse_requirements_file(ROOT_DIR / "requirements-dev.txt")
+
+    all_problems: list[str] = []
+
+    main_problems = diff("pyproject.toml[project.dependencies]", pyproject_main, "requirements.txt", requirements_main)
+    if main_problems:
+        all_problems.append("Основные зависимости расходятся:")
+        all_problems.extend(main_problems)
+
+    # requirements-dev.txt инклюдит requirements.txt через "-r requirements.txt",
+    # поэтому в файле физически присутствуют только dev-специфичные пакеты —
+    # сравниваем именно с dev-списком pyproject.toml.
+    dev_problems = diff(
+        "pyproject.toml[project.optional-dependencies.dev]", pyproject_dev, "requirements-dev.txt", requirements_dev
     )
-    dev_ok = _report_mismatch(
-        "pyproject.toml [project.optional-dependencies].dev и requirements-dev.txt",
-        "pyproject.toml",
-        parse_pyproject_dev_dependencies(),
-        "requirements-dev.txt",
-        parse_requirements_dev_txt(),
-    )
-    return 0 if (main_ok and dev_ok) else 1
+    if dev_problems:
+        all_problems.append("Dev-зависимости расходятся:")
+        all_problems.extend(dev_problems)
+
+    if all_problems:
+        print("❌ pyproject.toml и requirements*.txt разошлись:\n")
+        print("\n".join(all_problems))
+        print("\nПоправьте версию в обоих местах и запустите скрипт заново.")
+        return 1
+
+    print("✅ pyproject.toml и requirements*.txt синхронизированы.")
+    return 0
 
 
 if __name__ == "__main__":
