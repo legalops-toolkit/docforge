@@ -6,11 +6,6 @@
 <title>DocForge — конструктор процессуальных документов</title>
 <meta name="description" content="DocForge извлекает стороны, суд, номер дела и сумму из текста судебного решения и собирает иск, апелляцию или договор в формате .docx за секунды, а не за два часа.">
 
-<!-- CSP: стили и шрифты — только Google Fonts, картинки — Unsplash CDN (фотографии) плюс
-     data: (текстура шума на hero), скрипты — только собственные файлы. Иконки — свои SVG
-     инлайном, внешний иконный шрифт не подключаем. connect-src перечисляет локальный
-     бэкенд и типичные хостинги из README — при смене домена продакшена (см. TODO в
-     js/api.js) добавьте сюда реальный домен. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
   style-src 'self' https://fonts.googleapis.com;
@@ -37,7 +32,6 @@
 <body>
 <a class="skip-link" href="#main">Перейти к содержимому</a>
 
-<!-- ============================== ШАПКА ============================== -->
 <header class="site-header" id="siteHeader">
   <div class="container header-inner">
     <a class="brand" href="#top">
@@ -59,7 +53,6 @@
 </header>
 <div id="headerSentinel" class="sentinel" aria-hidden="true"></div>
 
-<!-- ============================== БОКОВАЯ ШКАЛА СЕКЦИЙ ============================== -->
 <aside class="section-rail" id="sectionRail" aria-hidden="true">
   <span class="rail-current">01</span>
   <span class="rail-track"><span class="rail-fill"></span></span>
@@ -69,7 +62,6 @@
 
 <main id="main">
 
-  <!-- ============================== HERO ============================== -->
   <section class="hero" id="top" data-rail-index="1" data-rail-label="Обзор">
     <div class="hero-bg" aria-hidden="true"></div>
     <div class="hero-bg-grain" aria-hidden="true"></div>
@@ -118,7 +110,6 @@
     <a href="#mission" class="scroll-cue"><span>Листайте</span><span class="scroll-cue-line" aria-hidden="true"></span></a>
   </section>
 
-  <!-- ============================== БЕГУЩАЯ СТРОКА ============================== -->
   <div class="marquee" role="presentation" aria-hidden="true">
     <div class="marquee-track">
       <span class="marquee-item">Исковое заявление <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/></svg></span>
@@ -132,7 +123,6 @@
     </div>
   </div>
 
-  <!-- ============================== МИССИЯ ============================== -->
   <section class="on-paper" id="mission" data-rail-index="1" data-rail-label="Обзор">
     <div class="container">
       <div class="mission-grid">
@@ -161,7 +151,6 @@
 
   <div class="thread-divider" role="presentation"></div>
 
-  <!-- ============================== EDITORIAL / ЦИТАТА ============================== -->
   <section class="editorial on-ink" data-rail-index="1" data-rail-label="Обзор">
     <div class="container editorial-inner" data-reveal>
       <span class="section-kicker">Философия продукта</span>
@@ -178,7 +167,6 @@
 
   <div class="thread-divider" role="presentation"></div>
 
-  <!-- ============================== ПРОЦЕСС ============================== -->
   <section class="on-ink" id="process" data-rail-index="1" data-rail-label="Обзор">
     <div class="container">
       <div class="process-grid">
@@ -221,7 +209,6 @@
 
   <div class="thread-divider" role="presentation"></div>
 
-  <!-- ============================== ИЗВЛЕЧЕНИЕ ============================== -->
   <section class="on-paper" id="extract" data-rail-index="2" data-rail-label="Извлечение">
     <div class="container">
       <div class="section-head" data-reveal>
@@ -231,7 +218,7 @@
       </div>
 
       <div class="extract-grid">
-        <!-- Ввод -->
+
         <div class="panel" data-reveal="left">
           <div class="panel-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><line x1="9.5" y1="12" x2="14.5" y2="12"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/></svg>Текст решения</div>
           <p class="panel-sub">Не отправляется никуда, кроме вашего DocForge API.</p>
@@ -264,7 +251,6 @@
           </form>
         </div>
 
-        <!-- Результат: 5 состояний -->
         <div class="panel" aria-live="polite" aria-busy="false" id="extractResultPanel" data-reveal="right">
           <div class="panel-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><line x1="9.5" y1="12" x2="14.5" y2="12"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/></svg>Результат</div>
           <p class="panel-sub">Проверьте данные перед тем, как передавать их в генерацию документа.</p>
@@ -325,7 +311,7 @@
 
   <div class="thread-divider on-paper-edge" role="presentation"></div>
 
-  <!-- ============================== ГЕНЕРАЦИЯ ============================== -->
+  
   <section class="on-paper" id="generate" data-rail-index="3" data-rail-label="Генерация">
     <div class="container">
       <div class="section-head" data-reveal>
@@ -341,7 +327,7 @@
       </div>
 
       <div class="panel" data-reveal>
-        <!-- ИСК -->
+    
         <div class="tabpanel is-active" id="panel-claim" role="tabpanel" aria-labelledby="tab-claim" tabindex="0">
           <form data-form="claim" data-endpoint="/generate/claim" novalidate>
             <div class="form-grid cols-2">
@@ -376,7 +362,7 @@
           </form>
         </div>
 
-        <!-- АПЕЛЛЯЦИЯ -->
+    
         <div class="tabpanel" id="panel-appeal" role="tabpanel" aria-labelledby="tab-appeal" tabindex="0" hidden>
           <form data-form="appeal" data-endpoint="/generate/appeal" novalidate>
             <div class="form-grid cols-2">
@@ -417,7 +403,7 @@
           </form>
         </div>
 
-        <!-- ДОГОВОР -->
+   
         <div class="tabpanel" id="panel-contract" role="tabpanel" aria-labelledby="tab-contract" tabindex="0" hidden>
           <form data-form="contract" data-endpoint="/generate/contract" novalidate>
             <div class="form-grid cols-2">
@@ -463,7 +449,7 @@
 
   <div class="thread-divider on-paper-edge" role="presentation"></div>
 
-  <!-- ============================== БЕЗОПАСНОСТЬ ============================== -->
+  
   <section class="on-paper" id="security" data-rail-index="4" data-rail-label="Защита">
     <div class="container">
       <div class="section-head" data-reveal>
@@ -500,7 +486,6 @@
   </section>
 </main>
 
-<!-- ============================== АУТРО ============================== -->
 <div class="outro on-ink">
   <div class="container">
     <a href="#extract" class="outro-link" data-magnetic>
@@ -510,7 +495,7 @@
   </div>
 </div>
 
-<!-- ============================== FOOTER ============================== -->
+
 <footer class="site-footer on-ink">
   <div class="container">
     <div class="footer-top">
@@ -544,11 +529,9 @@
   </div>
 </footer>
 
-<!-- ============================== ТОСТЫ ============================== -->
 <div class="toast-region" id="toastRegionPolite" aria-live="polite" aria-atomic="true"></div>
 <div class="toast-region" id="toastRegionAssertive" aria-live="assertive" aria-atomic="true"></div>
 
-<!-- ============================== МОДАЛКА API-КЛЮЧА ============================== -->
 <div class="modal-overlay" id="keyModalOverlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle" id="keyModal">
     <div class="modal-head">
