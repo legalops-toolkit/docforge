@@ -1,5 +1,5 @@
 # ── Stage 1: builder — собираем зависимости в изолированный venv ──────────
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # ── Stage 2: runtime — только venv + код, без компиляторов и кэша pip ─────
-FROM python:3.11-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # Непривилегированный пользователь — контейнер не должен работать под root.
 RUN groupadd --system app && useradd --system --gid app --home /app app
